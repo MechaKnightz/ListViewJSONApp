@@ -169,6 +169,7 @@ public class MainActivity extends AppCompatActivity {
                 for (int i=0;i<len;i++){
                     JSONObject e = jsonMountains.getJSONObject(i);
 
+                    //parsing the json data into mountain objects
                     mountains.add(new Mountain(
                             e.getString("ID"),
                             e.getString("name"),
@@ -186,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("brom","E:"+e.getMessage());
             }
 
+            //clears list and adds new element as well as updating it visually
             listData.clear();
             listData.addAll(mountains);
             adapter.notifyDataSetChanged();
