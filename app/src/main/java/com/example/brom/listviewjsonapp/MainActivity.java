@@ -4,6 +4,17 @@ import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,6 +22,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 // Create a new class, Mountain, that can hold your JSON data
@@ -26,10 +40,54 @@ import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
 
+    private ArrayList<Mountain> listData = new ArrayList<>();
+    MountainAdapter adapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        new FetchData().execute();
+
+        //created the adapter with the layout elements defined earlier
+        adapter = new MountainAdapter(this, R.layout.list_item_textview, R.id.my_item_textview, listData);
+        //get the listview and set the adapter
+        ListView myListView = findViewById(R.id.my_listview);
+        myListView.setAdapter(adapter);
+        //listener event for clicking on a list item
+        myListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
+                String out = listData.get(pos).name + " is part of the " + listData.get(pos).location
+                        + " mountain range and is " + listData.get(pos).size + "m";
+                Toast.makeText(getApplicationContext(), out, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the main_menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        int id = item.getItemId();
+
+        if(id==R.id.action_settings)
+        {
+            return true;
+        }
+        if(id==R.id.action_refresh)
+        {
+            new FetchData().execute();
+        }
+
+        return true;
     }
 
     private class FetchData extends AsyncTask<Void,Void,String>{
@@ -45,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 // Construct the URL for the Internet service
-                URL url = new URL("_ENTER_THE_URL_TO_THE_PHP_SERVICE_SERVING_JSON_HERE_");
+                URL url = new URL("http://wwwlab.iit.his.se/brom/kurser/mobilprog/dbservice/admin/getdataasjson.php?type=brom");
 
                 // Create the request to the PHP-service, and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -101,6 +159,36 @@ public class MainActivity extends AppCompatActivity {
 
             // Implement a parsing code that loops through the entire JSON and creates objects
             // of our newly created Mountain class.
+
+            ArrayList<Mountain> mountains = new ArrayList<>();
+
+            try {
+                JSONArray jsonMountains = new JSONArray(o);
+
+                int len = jsonMountains.length();
+                for (int i=0;i<len;i++){
+                    JSONObject e = jsonMountains.getJSONObject(i);
+
+                    mountains.add(new Mountain(
+                            e.getString("ID"),
+                            e.getString("name"),
+                            e.getString("type"),
+                            e.getString("company"),
+                            e.getString("location"),
+                            e.getString("category"),
+                            e.getLong("size"),
+                            e.getLong("cost"),
+                            e.getString("auxdata")
+                    ));
+                }
+
+            } catch (JSONException e) {
+                Log.e("brom","E:"+e.getMessage());
+            }
+
+            listData.clear();
+            listData.addAll(mountains);
+            adapter.notifyDataSetChanged();
         }
     }
 }
